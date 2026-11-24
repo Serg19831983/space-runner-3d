@@ -1,0 +1,17 @@
+{
+  "name": "Cyber Runner: Apex Edition",
+  "short_name": "CyberRunner",
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#03040a",
+  "theme_color": "#ff007f",
+  "icons": [
+    {
+      "src": "https://flaticon.com",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
