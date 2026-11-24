@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CYBER RUNNER: APEX EDITION</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body { overflow: hidden; overscroll-behavior: none; touch-action: none; background: #03040a; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #fff; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+
+        /* ВЕРХНИЙ HUD */
+        #hud { position: fixed; top: 0; left: 0; width: 100%; padding: 12px 16px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 10; }
+        .hud-row { display: flex; gap: 8px; }
+        .pill { background: rgba(10, 15, 32, 0.85); border: 1px solid rgba(0, 243, 255, 0.45); padding: 6px 14px; border-radius: 10px; backdrop-filter: blur(6px); }
+        .pill-lbl { font-size: 9px; color: #7a94c4; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .pill-val { font-size: 18px; font-weight: 900; color: #fff; }
+        .pill-val.gold { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+
+        .ctrl-btns { display: flex; gap: 8px; pointer-events: auto; }
+        .icon-btn { background: rgba(12, 18, 38, 0.9); border: 1px solid #2b3d66; color: #00f3ff; width: 40px; height: 40px; border-radius: 10px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.15s; }
+        .icon-btn:active { transform: scale(0.92); }
+
+        /* ИНДИКАТОРЫ В ПОЛЁТЕ */
+        #topAlerts { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; z-index: 12; width: 92%; max-width: 340px; }
+        .badge { font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 4px 14px; border-radius: 20px; background: rgba(6, 12, 26, 0.82); border: 1px solid rgba(0, 243, 255, 0.35); color: #00f3ff; text-align: center; }
+        #bossWrap { width: 100%; background: rgba(25, 5, 15, 0.92); border: 1px solid #ff0055; border-radius: 8px; padding: 6px 10px; }
+        .bar-bg { width: 100%; height: 7px; background: #1a0610; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+        .bar-fill { height: 100%; transition: width 0.1s; }
+
+        /* НИЖНЕЕ УПРАВЛЕНИЕ В БОЮ */
+        #combatBar { position: fixed; bottom: 18px; left: 0; width: 100%; padding: 0 18px; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; z-index: 15; }
+        .weapon-card { background: rgba(10, 15, 32, 0.88); border: 1px solid #ff007f; border-radius: 10px; padding: 8px 12px; width: 155px; }
+        #fireBtn { pointer-events: auto; background: linear-gradient(135deg, #ff007f, #8800ff); border: 2px solid #fff; color: #fff; padding: 16px 26px; border-radius: 50px; font-size: 15px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 0 22px rgba(255, 0, 127, 0.65); cursor: pointer; }
+        #fireBtn:active { transform: scale(0.93); }
+
+        /* ЭКРАНЫ МЕНЮ */
+        .screen { position: fixed; inset: 0; background: radial-gradient(circle at center, rgba(16, 22, 48, 0.9), rgba(3, 4, 10, 0.98)); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; z-index: 30; backdrop-filter: blur(8px); overflow-y: auto; }
+        .hidden { display: none !important; }
+        .logo { font-size: clamp(32px, 7vw, 56px); font-weight: 900; letter-spacing: 3px; text-align: center; background: linear-gradient(90deg, #00f3ff, #ff007f, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; }
+        .sub { color: #8c9ec4; font-size: 13px; text-align: center; margin-bottom: 24px; max-width: 440px; line-height: 1.5; }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 440px; }
+        .btn-main { grid-column: 1 / -1; background: linear-gradient(45deg, #ff007f, #7000ff); color: #fff; border: none; padding: 18px; border-radius: 12px; font-size: 20px; font-weight: 900; letter-spacing: 2px; cursor: pointer; box-shadow: 0 0 25px rgba(255, 0, 127, 0.5); text-transform: uppercase; }
+        .btn-sub { background: rgba(255, 255, 255, 0.06); border: 1px solid #2b3d66; color: #00f3ff; padding: 13px 8px; border-radius: 10px; font-size: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
+        .btn-sub:hover { background: rgba(0, 243, 255, 0.12); border-color: #00f3ff; }
+
+        /* МОДАЛЬНЫЕ ОКНА */
+        .panel { width: 100%; max-width: 720px; background: #0a0f22; border: 1px solid #253559; border-radius: 14px; padding: 20px; max-height: 86vh; overflow-y: auto; }
+        .panel-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1c2845; padding-bottom: 12px; margin-bottom: 16px; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
+        .card { background: #0f1630; border: 1px solid #1e2c4d; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+        .card.active { border-color: #00f3ff; box-shadow: 0 0 12px rgba(0, 243, 255, 0.25); }
+        .btn-sm { width: 100%; padding: 8px; border: none; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; margin-top: 10px; text-transform: uppercase; }
+        #flashScreen { position: fixed; inset: 0; pointer-events: none; z-index: 80; opacity: 0; transition: opacity 0.15s; }
+    </style>
+    <script src="https://cloudflare.com"></script>
+</head>
+<body>
+    <div id="flashScreen"></div>
+
+    <!-- ВЕРХНИЙ HUD -->
+    <div id="hud">
+        <div class="hud-row">
+            <div class="pill"><div class="pill-lbl">Дистанция</div><div class="pill-val" id="uiDist">0 м</div></div>
+            <div class="pill"><div class="pill-lbl">Кредиты</div><div class="pill-val gold" id="uiCoins">0</div></div>
+        </div>
+        <div class="ctrl-btns">
+            <button class="icon-btn" id="btnSound" title="Звук">🔊</button>
+            <button class="icon-btn hidden" id="btnPause" title="Пауза">⏸</button>
+        </div>
+    </div>
+
+    <!-- УВЕДОМЛЕНИЯ В БОЮ -->
+    <div id="topAlerts" class="hidden">
+        <div class="badge" id="sectorBadge">СЕКТОР 01: НЕОНОВЫЙ ГОРОД</div>
+        <div class="badge hidden" id="comboBadge" style="border-color:#ffd700; color:#ffd700;">🔥 КОМБО x1</div>
+        <div class="badge hidden" id="buffBadge" style="border-color:#00ff88; color:#00ff88;"></div>
+        <div id="bossWrap" class="hidden">
+            <div style="font-size:10px; color:#ff0055; font-weight:900; text-align:center;">⚠ ДРЕДНОУТ СИСТЕМЫ ⚠</div>
+            <div class="bar-bg"><div class="bar-fill" id="bossHpBar" style="width:100%; background:linear-gradient(90deg,#ff0055,#ff9900);"></div></div>
+        </div>
+    </div>
+
+    <!-- НИЖНЕЕ УПРАВЛЕНИЕ -->
+    <div id="combatBar" class="hidden">
+        <div class="weapon-card">
+            <div style="font-size:10px; color:#ff007f; font-weight:800;">ПЛАЗМА [F / ТАП]</div>
+            <div class="bar-bg"><div class="bar-fill" id="weaponFill" style="width:100%; background:linear-gradient(90deg,#ff007f,#ffaa00);"></div></div>
+        </div>
+        <button id="fireBtn">🔥 ОГОНЬ</button>
+    </div>
+
+    <!-- ГЛАВНОЕ МЕНЮ -->
+    <div id="menuScreen" class="screen">
+        <div class="logo">CYBER RUNNER</div>
+        <div class="sub" id="bestLabel">APEX EDITION • Лучший рекорд: 0 м</div>
+        <div class="menu-grid">
+            <button class="btn-main" id="btnPlay">▶ В БОЙ</button>
+            <button class="btn-sub" onclick="UI.open('hangar')">🚀 Ангар</button>
+            <button class="btn-sub" onclick="UI.open('missions')">🏆 Контракты</button>
+            <button class="btn-sub" onclick="UI.open('records')">📊 ТОП-5</button>
+            <button class="btn-sub" onclick="UI.open('settings')">⚙️ Настройки</button>
+        </div>
+    </div>
+
+    <!-- УНИВЕРСАЛЬНОЕ МОДАЛЬНОЕ ОКНО -->
+    <div id="modalScreen" class="screen hidden" style="z-index: 40;">
+        <div class="panel">
+            <div class="panel-head">
+                <h2 id="modalTitle" style="color:#00f3ff; font-size:19px;">РАЗДЕЛ</h2>
+                <button class="btn-sub" style="padding:7px 14px;" onclick="UI.close()">✕ Закрыть</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ФИНИША -->
+    <div id="gameOverScreen" class="screen hidden">
+        <div class="logo" style="font-size:36px;">КОРАБЛЬ РАЗБИТ</div>
+        <div class="sub" id="summaryText">Пройдено: 0 м • Заработано: +0 кредитов</div>
+        <div class="menu-grid">
+            <button class="btn-main" id="btnRetry">↻ ЕЩЁ РАЗ</button>
+            <button class="btn-sub" id="btnRevive" style="border-color:#00ff88; color:#00ff88;">⚡ Второй шанс</button>
+            <button class="btn-sub" id="btnDouble" style="border-color:#ffd700; color:#ffd700;">💰 Удвоить (x2)</button>
+            <button class="btn-sub" style="grid-column:1/-1;" onclick="UI.toMenu()">В главное меню</button>
+        </div>
+    </div>
+
+<script>
+// 1. КОНФИГУРАЦИЯ И СОХРАНЕНИЯ
+const SHIPS = [
+    { id: 'viper',   name: 'VIPER MK-1',  price: 0,    color: 0x00f3ff, wing: 0xff007f, spd: 32, bonus: 1.0, desc: 'Базовый перехватчик.' },
+    { id: 'phantom', name: 'PHANTOM X',   price: 250,  color: 0xaa00ff, wing: 0x00ff88, spd: 36, bonus: 1.15, desc: 'Стелс-истребитель (+15% кр.).' },
