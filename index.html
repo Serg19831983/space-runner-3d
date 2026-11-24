@@ -109,9 +109,9 @@ const SECTORS=[
   {d:900,n:'СЕКТОР 03: МАТРИЦА ЯДРА',f:0x021208,g:0x00ff66},
   {d:1500,n:'СЕКТОР 04: СИНГУЛЯРНОСТЬ',f:0x0d0218,g:0xaa00ff}
 ];
-let Save=Object.assign({coins:150,best:0,top:[],tot:0,boss:0,clm:[],ship:'viper',owned:['viper'],upg:{mag:0,shd:0,pls:0},hq:true},JSON.parse(localStorage.getItem('APEX_V3')||'{}'));
+let Save=Object.assign({coins:150,best:0,top:[],tot:0,boss:0,clm:[],ship:'viper',owned:['viper'],upg:{mag:0,shd:0,pls:0},hq:true},JSON.parse(localStorage.getItem('APEX_V4')||'{}'));
 function sync(){
-  localStorage.setItem('APEX_V3',JSON.stringify(Save));
+  localStorage.setItem('APEX_V4',JSON.stringify(Save));
   document.getElementById('uiCoins').innerText=Save.coins;
   document.getElementById('bestLbl').innerText=`APEX EDITION • Рекорд: ${Math.floor(Save.best)} м`;
 }
@@ -132,8 +132,9 @@ const AdsGateway={
 AdsGateway.init();
 
 const AudioSys={
-  ctx:new(window.AudioContext||window.webkitAudioContext)(),muted:false,step:0,
+  ctx:null,muted:false,step:0,
   bass:[65.41,65.41,77.78,65.41,87.31,87.31,98,77.78],
+  init(){if(!this.ctx)this.ctx=new(window.AudioContext||window.webkitAudioContext)();if(this.ctx.state==='suspended')this.ctx.resume()},
   sfx(tp){
-    if(this.muted)return;if(this.ctx.state==='suspended')this.ctx.resume();
+    if(this.muted)return;this.init();
     const t=this.ctx.currentTime,o=this.ctx.createOscillator(),g=this.ctx.createGain();o.connect(g);g.connect(this.ctx.destination);
